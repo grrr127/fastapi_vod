@@ -4,6 +4,7 @@ app = FastAPI()
 
 # dict, set, list, tuple -> collection
 
+
 @app.get("/")
 async def root() -> dict[str, str]:
     return {"message": "Hello World"}
