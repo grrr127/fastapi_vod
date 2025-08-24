@@ -17,15 +17,15 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Cache Poetry
-        id: cache-poetry
-        uses: actions/cache@v3
-        with:
-          key: poetry-1.8.5
-          path: ~/.local/ # poetry는 실제 ~/.local/에 설치되므로, 이 디렉터리를 통째로 캐시할 것이다.
+#      - name: Cache Poetry
+#        id: cache-poetry
+#        uses: actions/cache@v3
+#        with:
+#          key: poetry-1.8.5
+#          path: ~/.local/ # poetry는 실제 ~/.local/에 설치되므로, 이 디렉터리를 통째로 캐시할 것이다.
 
       - name: Install Poetry
-        if: steps.cache-poetry.outputs.cache-hit != 'true'
+#        if: steps.cache-poetry.outputs.cache-hit != 'true'
         run: |
           curl -sSL https://install.python-poetry.org | python3 - --version 1.8.5
       
@@ -59,6 +59,12 @@ jobs:
 
   test: # 전체 테스트 진행한다.
     runs-on: ubuntu-22.04
+    env:
+      MYSQL_HOST: 127.0.0.1
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 0000
+      MYSQL_DATABASE: when2meet_vod
     steps:
       - name: Check out the codes
         uses: actions/checkout@v2
@@ -94,6 +100,17 @@ jobs:
       - name: Install dependencies
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: poetry install --no-root
+
+      - name: Set timezone to KST
+        run: |
+          sudo rm /etc/localtime
+          sudo ln -s /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+
+      - name: Start Mysql
+        run: |
+          sudo systemctl start mysql
+          mysql -e "use mysql; FLUSH PRIVILEGES; ALTER USER '${{ env.MYSQL_USER }}'@'localhost' IDENTIFIED BY '${{ env.MYSQL_PASSWORD }}';" -uroot -proot
+          mysql -e 'CREATE DATABASE ${{ env.MYSQL_DATABASE }};' -u${{ env.MYSQL_USER }} -p${{ env.MYSQL_PASSWORD }}
 
       - name: Run tests
         run: |
